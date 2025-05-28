@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {} from '../../constants/baseURL'
+import { apiUrl } from '../../constants/baseURL'
 
 // fetch API using Axios
 const ApiClient = axios.create({
