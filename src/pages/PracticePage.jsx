@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import Webcam from 'react-webcam'
 import axios from 'axios'
 import { Button, FeedbackMessage } from '../components'
@@ -24,6 +24,9 @@ const PracticePage = () => {
     src: incorrectSound,
   })
 
+  const [attemptCounts, setAttemptCounts] = useState(0)
+  const [maxAttempts, setMaxAttempts] = useState(0)
+
   const { slug, unit } = useParams()
   const {
     data: practices,
@@ -33,10 +36,37 @@ const PracticePage = () => {
   } = useCurrentPractice(unit)
 
   const currPractice = practices[currPracticeIndex]
+  useEffect(() => {
+    const practiceId = currPractice?.number
+    if (practiceId && !maxAttempts[practiceId]) {
+      const randomAttempts = Math.floor(Math.random() * 2) + 1 // 1 - 2
+      setMaxAttempts((prev) => ({ ...prev, [practiceId]: randomAttempts }))
+    }
+  }, [currPracticeIndex, currPractice])
 
   const captureAndSubmit = async () => {
     const imageSrc = webcamRef.current.getScreenshot()
     setCapturedImage(imageSrc)
+
+    const practiceId = currPractice.number
+    const currentAttempt = attemptCounts[practiceId] || 0
+    const max = maxAttempts[practiceId] || 2
+
+    if (currentAttempt >= max) {
+      correctControls.play()
+      setXpPoints(10) // nilai default XP
+      setFeedbackStatus('correct')
+      setFeedbackAnswer('Accepted! You’ve reached max attempts.')
+
+      // Delay sedikit biar user tahu berhasil, lalu next
+      setShowFeedbackModal(true)
+      setTimeout(() => {
+        setShowFeedbackModal(false)
+        handleNextGesture()
+      }, 2000) // 2 detik, bebas disesuaikan
+
+      return
+    }
 
     const formData = new FormData()
     formData.append('slugPractice', unit)
@@ -56,12 +86,24 @@ const PracticePage = () => {
         setXpPoints(res.data.data.point)
         setFeedbackStatus('correct')
         setFeedbackAnswer("Congratulations! You're right.")
+        // Delay sedikit biar user tahu berhasil, lalu next
+        setShowFeedbackModal(true)
+        setTimeout(() => {
+          setShowFeedbackModal(false)
+          handleNextGesture()
+        }, 2000) // 2 detik, bebas disesuaikan
       })
       .catch((err) => {
+        const updatedAttempts = currentAttempt + 1
+        setAttemptCounts((prev) => ({
+          ...prev,
+          [practiceId]: updatedAttempts,
+        }))
+
         incorrectControls.play()
-        const result = err.response.data
+        const result = err.response?.data || {}
         setFeedbackStatus('incorrect')
-        setFeedbackAnswer(result.message)
+        setFeedbackAnswer(result.message || 'Try again.')
       })
 
     setShowFeedbackModal(true)
@@ -79,6 +121,7 @@ const PracticePage = () => {
   }
 
   const handleNextGesture = () => {
+    setAttemptCounts((prev) => ({ ...prev, [currPractice.number]: 0 }))
     if (currPracticeIndex < practices.length - 1) {
       setcurrPracticeIndex(currPracticeIndex + 1)
       setCapturedImage(null)
@@ -88,6 +131,7 @@ const PracticePage = () => {
   }
 
   const handlePreviousGesture = () => {
+    setAttemptCounts((prev) => ({ ...prev, [currPractice.number]: 0 }))
     if (currPracticeIndex > 0) {
       setcurrPracticeIndex(currPracticeIndex - 1)
       setCapturedImage(null)

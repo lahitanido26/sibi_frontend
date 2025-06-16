@@ -14,7 +14,7 @@ const PracticeChart = () => {
   return (
     <section id="PracticeChart">
       <h3 className="font-bold mb-4 text-xl">Practice Lesson</h3>
-      {/* Asl Lessons */}
+      {/* Lessons */}
       {isFetchingPractice && (
         <section className="w-full min-h-screen p-4 md:p-8 flex justify-center items-center">
           <Loading />

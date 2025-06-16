@@ -53,7 +53,7 @@ const PracticeLesson = ({ data }) => {
         <div className="text-gray-100">
           {/* Lesson Number and Pages */}
           <p className="font-bold opacity-80 uppercase tracking-wider text-shadow">
-            ASL Practice {data.lesson.number} - {data.lesson.title}
+            SIBI Practice {data.lesson.number} - {data.lesson.title}
           </p>
           <div className="flex flex-col sm:flex-row justify-between">
             {/* Subject Title */}
