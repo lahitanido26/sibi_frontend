@@ -119,14 +119,12 @@ const Login = () => {
         </button>
 
         {/* Forgot Password Link */}
-        <p className="mt-4 text-gray-500 dark:text-gray-400 text-center">
           <Link
             to="/forgot-password"
-            className="font-bold text-[#184567] dark:text-[#F1F5F9] hover:text-[#96C4DE] hover:underline"
+            className="font-bold text-[#184567] dark:text-[#F1F5F9] mt-4 hover:text-[#96C4DE] hover:underline"
           >
             Forgot Password?
           </Link>
-        </p>
 
         {/* Sign Up Link */}
         <p className="mt-6 text-gray-500 dark:text-gray-400 text-center">
