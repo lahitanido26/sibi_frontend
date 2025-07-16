@@ -39,7 +39,7 @@ const PracticePage = () => {
   useEffect(() => {
     const practiceId = currPractice?.number
     if (practiceId && !maxAttempts[practiceId]) {
-      const randomAttempts = Math.floor(Math.random() * 2) + 1 // 1 - 2
+      const randomAttempts = Math.floor(Math.random() * 1) + 1 // 1 - 2
       setMaxAttempts((prev) => ({ ...prev, [practiceId]: randomAttempts }))
     }
   }, [currPracticeIndex, currPractice])
@@ -50,7 +50,7 @@ const PracticePage = () => {
 
     const practiceId = currPractice.number
     const currentAttempt = attemptCounts[practiceId] || 0
-    const max = maxAttempts[practiceId] || 2
+    const max = maxAttempts[practiceId] || 1
 
     if (currentAttempt >= max) {
       correctControls.play()
@@ -63,8 +63,7 @@ const PracticePage = () => {
       setTimeout(() => {
         setShowFeedbackModal(false)
         handleNextGesture()
-      }, 2000) // 2 detik, bebas disesuaikan
-
+      }, 500) // 0,5 detik
       return
     }
 
@@ -91,7 +90,7 @@ const PracticePage = () => {
         setTimeout(() => {
           setShowFeedbackModal(false)
           handleNextGesture()
-        }, 2000) // 2 detik, bebas disesuaikan
+        }, 500) // 0,5 detik
       })
       .catch((err) => {
         const updatedAttempts = currentAttempt + 1
