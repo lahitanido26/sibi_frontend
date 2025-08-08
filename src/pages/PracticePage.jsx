@@ -27,6 +27,7 @@ const PracticePage = () => {
   const [attemptCounts, setAttemptCounts] = useState(0)
   const [maxAttempts, setMaxAttempts] = useState(0)
   const autoCaptureTimeout = useRef(null)
+  const captureIntervalRef = useRef(null)
 
   const { slug, unit } = useParams()
   const {
@@ -35,6 +36,7 @@ const PracticePage = () => {
     isFetching: isFetchingPractice,
     refetch: refetchPractice,
   } = useCurrentPractice(unit)
+  console.log(attemptCounts)
 
   const currPractice = practices[currPracticeIndex]
   useEffect(() => {
@@ -44,21 +46,41 @@ const PracticePage = () => {
       setMaxAttempts((prev) => ({ ...prev, [practiceId]: randomAttempts }))
     }
   }, [currPracticeIndex, currPractice])
-   useEffect(() => {
-     // Set auto-capture timer ketika soal baru dimuat
-     if (currPractice) {
-       autoCaptureTimeout.current = setTimeout(() => {
-         captureAndSubmit()
-       }, 10000) // 10 detik
-     }
+  useEffect(() => {
+    // Buat interval auto-capture setiap 10 detik
+    if (currPractice) {
+      captureIntervalRef.current = setInterval(() => {
+        const practiceId = currPractice.number
+        setAttemptCounts((prev) => {
+          const currentAttempt = prev[practiceId] || 0
+          const updatedAttempts = currentAttempt + 1
+          console.log('attempt for', practiceId, '→', updatedAttempts)
 
-     // Bersihkan timeout sebelumnya saat soal berganti
-     return () => {
-       if (autoCaptureTimeout.current) {
-         clearTimeout(autoCaptureTimeout.current)
-       }
-     }
-   }, [currPracticeIndex])
+          return {
+            ...prev,
+            [practiceId]: updatedAttempts,
+          }
+        })
+
+        captureAndSubmit()
+      }, 10000)
+    }
+
+    // Bersihkan interval ketika berganti soal atau unmount
+    return () => {
+      if (captureIntervalRef.current) {
+        clearInterval(captureIntervalRef.current)
+      }
+    }
+  }, [currPracticeIndex, attemptCounts])
+
+  useEffect(() => {
+    if (currPracticeIndex === practices.length - 1) {
+      if (captureIntervalRef.current) {
+        clearInterval(captureIntervalRef.current)
+      }
+    }
+  }, [currPracticeIndex, practices])
 
   const captureAndSubmit = async () => {
     // Stop auto-capture jika user sudah capture manual
