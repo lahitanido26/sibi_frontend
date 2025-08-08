@@ -26,6 +26,7 @@ const PracticePage = () => {
 
   const [attemptCounts, setAttemptCounts] = useState(0)
   const [maxAttempts, setMaxAttempts] = useState(0)
+  const autoCaptureTimeout = useRef(null)
 
   const { slug, unit } = useParams()
   const {
@@ -43,8 +44,28 @@ const PracticePage = () => {
       setMaxAttempts((prev) => ({ ...prev, [practiceId]: randomAttempts }))
     }
   }, [currPracticeIndex, currPractice])
+   useEffect(() => {
+     // Set auto-capture timer ketika soal baru dimuat
+     if (currPractice) {
+       autoCaptureTimeout.current = setTimeout(() => {
+         captureAndSubmit()
+       }, 10000) // 10 detik
+     }
+
+     // Bersihkan timeout sebelumnya saat soal berganti
+     return () => {
+       if (autoCaptureTimeout.current) {
+         clearTimeout(autoCaptureTimeout.current)
+       }
+     }
+   }, [currPracticeIndex])
 
   const captureAndSubmit = async () => {
+    // Stop auto-capture jika user sudah capture manual
+    if (autoCaptureTimeout.current) {
+      clearTimeout(autoCaptureTimeout.current)
+    }
+
     const imageSrc = webcamRef.current.getScreenshot()
     setCapturedImage(imageSrc)
 
@@ -74,6 +95,7 @@ const PracticePage = () => {
 
     const token = auth.getToken()
 
+    //Kirim foto ke API scan di Backend Nest.js untuk mendapatkan hasil prediksi
     ApiClient.post('/practice/scan', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
