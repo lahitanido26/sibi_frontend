@@ -10,6 +10,7 @@ import ApiClient from '../lib/api/ApiClient'
 import { useAudio } from 'react-use'
 import correctSound from '../assets/correct.wav'
 import incorrectSound from '../assets/incorrect.wav'
+import CompleteScreenPratice from './CompleteScreenPratice'
 
 const PracticePage = () => {
   const [currPracticeIndex, setcurrPracticeIndex] = useState(0)
@@ -28,6 +29,8 @@ const PracticePage = () => {
   const [maxAttempts, setMaxAttempts] = useState(0)
   const autoCaptureTimeout = useRef(null)
   const captureIntervalRef = useRef(null)
+  const [countdown, setCountdown] = useState(10)
+  const [quizComplete, setQuizComplete] = useState(false)
 
   const { slug, unit } = useParams()
   const {
@@ -36,7 +39,6 @@ const PracticePage = () => {
     isFetching: isFetchingPractice,
     refetch: refetchPractice,
   } = useCurrentPractice(unit)
-  console.log(attemptCounts)
 
   const currPractice = practices[currPracticeIndex]
   useEffect(() => {
@@ -47,26 +49,31 @@ const PracticePage = () => {
     }
   }, [currPracticeIndex, currPractice])
   useEffect(() => {
-    // Buat interval auto-capture setiap 10 detik
     if (currPractice) {
+      setCountdown(10) // reset timer setiap soal baru
       captureIntervalRef.current = setInterval(() => {
-        const practiceId = currPractice.number
-        setAttemptCounts((prev) => {
-          const currentAttempt = prev[practiceId] || 0
-          const updatedAttempts = currentAttempt + 1
-          console.log('attempt for', practiceId, '→', updatedAttempts)
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            // auto-capture
+            const practiceId = currPractice.number
+            setAttemptCounts((prev) => {
+              const currentAttempt = prev[practiceId] || 0
+              const updatedAttempts = currentAttempt + 1
+              console.log('attempt for', practiceId, '→', updatedAttempts)
 
-          return {
-            ...prev,
-            [practiceId]: updatedAttempts,
+              return {
+                ...prev,
+                [practiceId]: updatedAttempts,
+              }
+            })
+            captureAndSubmit()
+            return 10 // reset setelah capture
           }
+          return prev - 1
         })
-
-        captureAndSubmit()
-      }, 10000)
+      }, 1000) // update setiap detik
     }
 
-    // Bersihkan interval ketika berganti soal atau unmount
     return () => {
       if (captureIntervalRef.current) {
         clearInterval(captureIntervalRef.current)
@@ -74,13 +81,13 @@ const PracticePage = () => {
     }
   }, [currPracticeIndex, attemptCounts])
 
-  useEffect(() => {
-    if (currPracticeIndex === practices.length - 1) {
-      if (captureIntervalRef.current) {
-        clearInterval(captureIntervalRef.current)
-      }
-    }
-  }, [currPracticeIndex, practices])
+  // useEffect(() => {
+  //   if (currPracticeIndex === practices.length - 1) {
+  //     if (captureIntervalRef.current) {
+  //       setQuizComplete(true)
+  //     }
+  //   }
+  // }, [currPracticeIndex, practices])
 
   const captureAndSubmit = async () => {
     // Stop auto-capture jika user sudah capture manual
@@ -170,6 +177,8 @@ const PracticePage = () => {
       setCapturedImage(null)
       setFeedbackStatus(null)
       setFeedbackAnswer('')
+    } else {
+      setQuizComplete(true)
     }
   }
 
@@ -191,18 +200,18 @@ const PracticePage = () => {
     <>
       {correctAudio}
       {incorrectAudio}
-      {isFetchingPractice && (
+      {isFetchingPractice && !quizComplete && (
         <section className="w-full min-h-screen p-4 md:p-8 flex justify-center items-center">
           <Loading />
         </section>
       )}
-      {!isFetchingPractice && !practices && (
+      {!isFetchingPractice && !practices && !quizComplete && (
         <section className="w-full min-h-screen p-4 md:p-8 flex justify-center items-center">
           <h1 className="text-2xl font-bold">No lessons found.</h1>
         </section>
       )}
 
-      {!isFetchingPractice && practices && (
+      {!isFetchingPractice && practices && !quizComplete && (
         <section className="w-full min-h-screen p-4 md:p-8 bg-gradient-to-b from-[#C3E9FA] to-[#C0E8D5] dark:from-[#245261] dark:to-[#23423A]">
           {/* Page Heading */}
           <h1 className="text-2xl font-bold mb-8 ">Practice Sign Language</h1>
@@ -229,13 +238,17 @@ const PracticePage = () => {
               className="rounded-lg"
               width="100%"
             />
-            <div className="flex items-center justify-center mt-2">
+            <div className="flex items-center justify-center mt-2 flex-col">
               <Button
                 type="button"
                 btnStyle="text-white bg-green-500 hover:bg-blue-700 px-4 py-2 rounded"
                 onClick={captureAndSubmit}
                 title="Capture"
               />
+              <p className="mt-2 text-gray-700 text-sm">
+                Click capture or Auto-capture in:{' '}
+                <span className="font-bold">{countdown}</span>s
+              </p>
             </div>
           </div>
 
@@ -282,6 +295,13 @@ const PracticePage = () => {
             />
           </div>
         </section>
+      )}
+      {quizComplete && (
+        <div className="w-full h-screen overflow-hidden flex flex-col bg-gradient-to-b from-[#C3E9FA] to-[#C0E8D5] dark:from-[#245261] dark:to-[#23423A]">
+          <div className="flex-grow overflow-y-auto">
+            <CompleteScreenPratice xp={xpPoints} score={xpPoints} />
+          </div>
+        </div>
       )}
     </>
   )
